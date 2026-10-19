@@ -1,0 +1,4 @@
+package serverviwe.view.controller;
+import jakarta.servlet.http.HttpSession; import lombok.RequiredArgsConstructor; import org.springframework.stereotype.Controller; import org.springframework.ui.Model; import org.springframework.web.bind.annotation.*; import serverviwe.view.service.LogAnalyzerService;
+@Controller @RequiredArgsConstructor public class LogController {private final LogAnalyzerService logs;
+@GetMapping("/log-analyzer") public String page(@RequestParam(defaultValue="nginx") String source,@RequestParam(defaultValue="100") int lines,HttpSession s,Model m){try{if(s.getAttribute("host")==null)return "redirect:/connecttovps";m.addAttribute("logs",logs.getLogs((String)s.getAttribute("host"),(Integer)s.getAttribute("port"),(String)s.getAttribute("username"),(String)s.getAttribute("password"),source,lines));m.addAttribute("source",source);m.addAttribute("lines",lines);}catch(Exception e){m.addAttribute("error",e.getMessage());}return "log-analyzer";}}
