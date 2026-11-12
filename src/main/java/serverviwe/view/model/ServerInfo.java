@@ -1,19 +1,22 @@
 package serverviwe.view.model;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
 @Getter
 @Setter
 @Entity
-@Table(name = "server_info")
+@Table(name = "server_info", indexes = @Index(name = "idx_server_ip_port", columnList = "serverIp,sshPort", unique = true))
 public class ServerInfo {
-@GeneratedValue(strategy = GenerationType.IDENTITY)
-@Id
-private Long id;
-private String serverIp;
-private String serverName;
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column(nullable = false, length = 255)
+    private String serverIp;
+    @Column(nullable = false, length = 100)
+    private String serverName;
+    @Column(nullable = false)
+    private int sshPort = 22;
+    @Column(nullable = false, length = 100)
+    private String username = "root";
 }

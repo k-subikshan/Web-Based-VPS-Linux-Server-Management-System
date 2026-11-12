@@ -1,17 +1,13 @@
 package serverviwe.view.controller;
 
+import jakarta.servlet.http.HttpSession;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-
-@RestController
+@Controller
 public class Home {
-    
-    @GetMapping("/")
-    public String Homeview() {
-
-        return "Hello " ;
+    @GetMapping({"/", "/dashboard"})
+    public String home(HttpSession session) {
+        return session.getAttribute("host") == null ? "redirect:/connecttovps" : "dashboard";
     }
-    
-
 }

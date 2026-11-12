@@ -1,90 +1,43 @@
 package serverviwe.view.controller;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
-
-import jakarta.servlet.http.HttpSession;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 import serverviwe.view.layer.vpsloginform;
+import serverviwe.view.model.ServerInfo;
+import serverviwe.view.reposiotory.ServerInfoRepository;
+import serverviwe.view.service.AuditService;
+import serverviwe.view.service.SSHService;
 
-
-
-
-@Controller
+@Controller @RequiredArgsConstructor
 public class serverlogin {
+    private final SSHService ssh;
+    private final ServerInfoRepository servers;
+    private final AuditService audit;
+
     @GetMapping("/connecttovps")
-    public String connectvps() {
-        return "vpslogin";
-    }
+    public String connectvps(Model model) { if(!model.containsAttribute("vpsloginform")) model.addAttribute("vpsloginform",new vpsloginform()); return "vpslogin"; }
+
     @PostMapping("/connect")
-    public String postMethodName(@ModelAttribute vpsloginform entity,Model model,HttpSession session1) throws Exception {
-        JSch jsch = new JSch();
-
-Session session = jsch.getSession("root", entity.getHost(), 22);
-session.setPassword(entity.getPassword());
-
-Properties config = new Properties();
-config.put("StrictHostKeyChecking", "no");
-session.setConfig(config);
-
-session.connect();
-
-System.out.println("------------------------------------------------------------Connected!------------------------------------------------");
-String output = executeCommand(
-    session,
-    "find /"+entity.getPath()+" -maxdepth 1 -mindepth 1 -type d -printf '%f\\n'"
-);
-
-List<String> folders = Arrays.asList(output.split("\\R"));
-model.addAttribute("folders", folders);
-model.addAttribute("path", entity.getPath());
-model.addAttribute("host", entity.getHost());
-model.addAttribute("port", entity.getPort());
-model.addAttribute("password", entity.getPassword());
-model.addAttribute("sessionid",session);
-model.addAttribute("fullpath", entity.getPath());
-session1.setAttribute("host", entity.getHost());
-session1.setAttribute("port", entity.getPort());
-session1.setAttribute("password", entity.getPassword());
-session1.setAttribute("fullpath", entity.getPath());
-session1.setAttribute("sessionid",session);
-session1.setAttribute("fullpath", entity.getPath());
-session1.setAttribute("currentpath", entity.getPath());
-        return "pathfolder";
+    public String connect(@Valid @ModelAttribute("vpsloginform") vpsloginform form, BindingResult errors, HttpSession session, Model model) {
+        form.setHost(form.getHost()==null?null:form.getHost().trim()); form.setUsername(form.getUsername()==null?null:form.getUsername().trim()); form.setPath(SSHService.normalizePath(form.getPath()));
+        if(errors.hasErrors()){ model.addAttribute("error","Please correct the highlighted fields."); return "vpslogin"; }
+        try {
+            SSHService.CommandResult test=ssh.execute(form.getHost(),form.getPort(),form.getUsername(),form.getPassword(),"printf connected");
+            if(test.exitCode()!=0) throw new IllegalStateException(test.combined());
+            session.setAttribute("host",form.getHost()); session.setAttribute("port",form.getPort()); session.setAttribute("username",form.getUsername()); session.setAttribute("password",form.getPassword()); session.setAttribute("path",form.getPath());
+            servers.findByServerIpAndSshPort(form.getHost(),form.getPort()).ifPresentOrElse(s->{s.setUsername(form.getUsername());s.setServerName(form.getHost());servers.save(s);},()->{ServerInfo s=new ServerInfo();s.setServerIp(form.getHost());s.setServerName(form.getHost());s.setSshPort(form.getPort());s.setUsername(form.getUsername());servers.save(s);});
+            audit.log("SSH_CONNECT",form.getHost(),form.getUsername(),"Successful SSH connection");
+            return "redirect:/dashboard";
+        } catch(Exception e){ model.addAttribute("error",friendly(e)); return "vpslogin"; }
     }
-    public String executeCommand(Session session, String command) throws Exception {
 
-        ChannelExec channel = (ChannelExec) session.openChannel("exec");
-        channel.setCommand(command);
-
-        InputStream input = channel.getInputStream();
-        channel.connect();
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-
-        StringBuilder output = new StringBuilder();
-        String line;
-
-        while ((line = reader.readLine()) != null) {
-            output.append(line).append("\n");
-        }
-
-        channel.disconnect();
-
-        return output.toString();
-    }
-      
-
+    @PostMapping("/disconnect")
+    public String disconnect(HttpSession session){ audit.log("SSH_DISCONNECT",(String)session.getAttribute("host"),(String)session.getAttribute("username"),"User disconnected"); session.invalidate(); return "redirect:/connecttovps"; }
+    @GetMapping("/logout") public String logout(HttpSession session){ session.invalidate(); return "redirect:/connecttovps"; }
+    private String friendly(Exception e){ String m=e.getMessage(); if(m==null||m.isBlank()) return "Unable to connect to the VPS."; if(m.contains("UnknownHost")) return "Host/IP is invalid or contains unexpected characters. Check the host value."; if(m.contains("Connection refused")) return "SSH connection was refused. Verify that SSH is running and the port is open."; if(m.toLowerCase().contains("auth fail")) return "SSH authentication failed. Check username/password."; return m; }
 }

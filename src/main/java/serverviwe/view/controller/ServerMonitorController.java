@@ -1,105 +1,21 @@
 package serverviwe.view.controller;
 
 import jakarta.servlet.http.HttpSession;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-
+import org.springframework.web.bind.annotation.*;
 import serverviwe.view.service.ServerMonitorService;
 import serverviwe.view.service.ServiceMonitor;
+import java.util.Map;
 
-@Controller
+@Controller @RequiredArgsConstructor
 public class ServerMonitorController {
-
-    private final ServerMonitorService monitor;
-    private final ServiceMonitor serverMonitor;
-
-    public ServerMonitorController(
-            ServerMonitorService monitor,
-            ServiceMonitor serverMonitor) {
-
-        this.monitor = monitor;
-        this.serverMonitor = serverMonitor;
-    }
-
-    @GetMapping("/server-monitor")
-    public String monitor(
-            HttpSession session,
-            Model model) throws Exception {
-
-        String host =
-                session.getAttribute("host").toString();
-
-        String password =
-                session.getAttribute("password").toString();
-
-        /*
-         * Server statistics
-         */
-        var stats =
-                monitor.getServerStats(
-                        host,
-                        password
-                );
-
-        /*
-         * Service status
-         */
-        var services =
-                serverMonitor.getServices(
-                        host,
-                        password
-                );
-
-        model.addAllAttributes(services);
-
-        /*
-         * Server information
-         */
-        model.addAttribute(
-                "host",
-                host
-        );
-
-        model.addAttribute(
-                "port",
-                session.getAttribute("port")
-        );
-
-        model.addAttribute(
-                "path",
-                session.getAttribute("path")
-        );
-
-        /*
-         * Server monitor
-         */
-        model.addAttribute(
-                "cpu",
-                stats.get("cpu")
-        );
-
-        model.addAttribute(
-                "ram",
-                stats.get("ram")
-        );
-
-        model.addAttribute(
-                "disk",
-                stats.get("disk")
-        );
-
-        model.addAttribute(
-                "network",
-                stats.get("network")
-        );
-
-        model.addAttribute(
-                "status",
-                stats.get("status")
-        );
-
-        return "server-monitor";
-    }
+    private final ServerMonitorService monitor; private final ServiceMonitor services;
+    @GetMapping("/server-monitor") 
+    public String page(HttpSession s,Model m){try{String h=(String)s.getAttribute("host");int p=(Integer)s.getAttribute("port");String u=(String)s.getAttribute("username"),pw=(String)s.getAttribute("password"); if(h==null) return "redirect:/connecttovps"; m.addAllAttributes(monitor.getServerStats(h,p,u,pw));var serviceMap=services.getServices(h,p,u,pw); m.addAllAttributes(serviceMap); m.addAttribute("services",serviceMap);m.addAttribute("host",h);m.addAttribute("port",p);m.addAttribute("username",u);m.addAttribute("path",s.getAttribute("path"));return "server-monitor";}catch(Exception e){m.addAttribute("error",e.getMessage());return "server-monitor";}}
+    @GetMapping("/api/monitor") 
+    @ResponseBody 
+    
+    public Map<String,String> api(HttpSession s)throws Exception{return monitor.getServerStats((String)s.getAttribute("host"),(Integer)s.getAttribute("port"),(String)s.getAttribute("username"),(String)s.getAttribute("password"));}
 }

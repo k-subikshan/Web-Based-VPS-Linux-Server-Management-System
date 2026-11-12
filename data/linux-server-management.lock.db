@@ -1,0 +1,6 @@
+#FileLock
+#Thu Nov 12 20:50:06 IST 2026
+hostName=subi
+id=1a1d0583d9974d910e2467a98903a63b06f0b432a5d
+method=file
+server=192.168.1.102\:45585

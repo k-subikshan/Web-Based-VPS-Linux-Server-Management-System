@@ -1,38 +1,21 @@
 package serverviwe.view.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
-@Setter
-@Entity
-@Table(name = "project_deployed")
+@Getter @Setter
+@Entity @Table(name = "project_deployed")
 public class ProjectDeployed {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "server_info_id")
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "server_info_id")
     private ServerInfo serverInfo;
-
+    @Column(nullable = false, length = 150)
     private String projectName;
-
+    @Column(length = 500)
+    private String projectPath;
     @Enumerated(EnumType.STRING)
-    private ProjectStatus status;
-
-    public enum ProjectStatus {
-        DEPLOYED,
-        UNDEPLOYED
-    }
+    private ProjectStatus status = ProjectStatus.UNDEPLOYED;
+    public enum ProjectStatus { DEPLOYED, UNDEPLOYED }
 }

@@ -1,5 +1,9 @@
 package serverviwe.view.reposiotory;
 
-public interface ProjectDeployedRepository extends org.springframework.data.jpa.repository.JpaRepository<serverviwe.view.model.ProjectDeployed, Long> {
+import org.springframework.data.jpa.repository.JpaRepository;
+import serverviwe.view.model.ProjectDeployed;
+import java.util.List;
 
+public interface ProjectDeployedRepository extends JpaRepository<ProjectDeployed, Long> {
+    List<ProjectDeployed> findByServerInfoId(Long serverId);
 }

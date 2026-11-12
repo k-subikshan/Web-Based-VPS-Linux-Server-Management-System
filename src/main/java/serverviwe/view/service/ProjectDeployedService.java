@@ -1,26 +1,15 @@
 package serverviwe.view.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import serverviwe.view.model.ProjectDeployed;
 import serverviwe.view.reposiotory.ProjectDeployedRepository;
+import java.util.List;
 
-@Service
+@Service @RequiredArgsConstructor
 public class ProjectDeployedService {
-ProjectDeployedRepository projectDeployedRepository;
-public ProjectDeployedService(ProjectDeployedRepository projectDeployedRepository) {
-    this.projectDeployedRepository = projectDeployedRepository;}
-    public String getProjectStatusById(Long id) {
-        return projectDeployedRepository.findById(id)
-                .map(projectDeployed -> projectDeployed.getStatus().name())
-                .orElse("Project not found");
-    }
-    public String getProjectNameById(Long id) {
-        return projectDeployedRepository.findById(id)
-                .map(projectDeployed -> projectDeployed.getProjectName())
-                .orElse("Project not found");
-    }
-    public String getServerIpById(Long id) {
-        return projectDeployedRepository.findById(id)
-                .map(projectDeployed -> projectDeployed.getServerInfo().getServerIp())
-                .orElse("Project not found");}
-    
+    private final ProjectDeployedRepository repository;
+    public List<ProjectDeployed> list(Long serverId){ return serverId==null?repository.findAll():repository.findByServerInfoId(serverId); }
+    public ProjectDeployed save(ProjectDeployed p){ return repository.save(p); }
+    public void delete(Long id){ repository.deleteById(id); }
 }

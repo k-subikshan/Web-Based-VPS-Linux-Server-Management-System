@@ -1,44 +1,19 @@
 package serverviwe.view.service;
 
-
-import org.springframework.stereotype.Service;
-
 import javax.net.ssl.HttpsURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.security.cert.X509Certificate;
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
+import org.springframework.stereotype.Service;
 
 @Service
 public class SSLMonitorService {
-
-    public long getDaysRemaining(
-            String website) throws Exception {
-
-        @SuppressWarnings("deprecation")
-        URL url =
-                new URL(website);
-
-        HttpsURLConnection connection =
-                (HttpsURLConnection)
-                        url.openConnection();
-
-        connection.connect();
-
-        X509Certificate certificate =
-                (X509Certificate)
-                        connection
-                                .getServerCertificates()[0];
-
-        Date expiry =
-                certificate.getNotAfter();
-
-        long difference =
-                expiry.getTime()
-                - System.currentTimeMillis();
-
-        connection.disconnect();
-
-        return difference /
-                (1000 * 60 * 60 * 24);
+    public long getDaysRemaining(String website) throws Exception {
+        URI uri=URI.create(website.trim());
+        if(!"https".equalsIgnoreCase(uri.getScheme())) throw new IllegalArgumentException("HTTPS URL required");
+        HttpsURLConnection c=(HttpsURLConnection)uri.toURL().openConnection(); c.setConnectTimeout(5000); c.setReadTimeout(5000); c.connect();
+        try { X509Certificate cert=(X509Certificate)c.getServerCertificates()[0]; return Duration.between(Instant.now(),cert.getNotAfter().toInstant()).toDays(); }
+        finally { c.disconnect(); }
     }
 }
