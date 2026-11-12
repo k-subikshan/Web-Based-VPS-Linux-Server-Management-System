@@ -101,11 +101,6 @@ Planned security improvements include:
 - Audit logs for server operations.
 - Secure communication between application components.
 
-## 🚧 Project Status
-
-**Currently under development.**
-
-The project is being developed incrementally, starting with authentication, backend infrastructure, and SSH-based server communication, followed by automated deployment and AI-assisted management capabilities.
 
 ## 👨‍💻 Author
 
